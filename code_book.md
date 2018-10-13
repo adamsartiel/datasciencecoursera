@@ -1,12 +1,16 @@
-#Code Book for the "tidyworkdata.txt" file
+Code Book for the "tidyworkdata.txt" file
+==========================================
 
 This file aggregates mean data information from the features described below.
 The data was assembled from 30 subjects during 6 activities.
 All measurements of the same variable for the same individual and the same activity were averaged into one cell.
 
-Variants:
+Variables:
+========== 
  Subjects (factor, 1-30)
+ 
  Activity_Name (factor: WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING)
+ 
  Columns 3-81: 79 time (seconds) and frequence (Hz) variables, denoting average and std of sensor output, as described below:
 
 
