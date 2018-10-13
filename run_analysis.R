@@ -1,0 +1,33 @@
+create_tidy_data<-function(){
+  library(dplyr)
+  library(tidyr)
+  setwd("C:/Users/Adam/Desktop/R")
+  setwd("./Data_Analysis_Course/getdata_projectfiles_FUCI_HAR_Dataset/UCI HAR Dataset/train")
+  traindata<<-read.table("x_train.txt")
+  trainactivity<-read.table("y_train.txt")
+  trainsubjects<-read.table("subject_train.txt")
+  setwd("../test")
+  testdata<-read.table("x_test.txt")
+  testactivity<-read.table("y_test.txt")
+  testsubjects<-read.table("subject_test.txt")
+  mergeddata<-rbind(traindata,testdata)
+  totalactivity<-rbind(trainactivity,testactivity)
+  totalsubjects<-rbind(trainsubjects,testsubjects)
+  colnames(totalsubjects)<-as.character("Subjects")
+  setwd("../")
+  activities<-read.table("activity_labels.txt")
+  activityname<-activities[,2]
+  Activity_Name<-activityname[as.numeric(totalactivity[,1])]
+  columnnames<-read.table("features.txt")
+  colnames(mergeddata)<-as.character(columnnames[,"V2"])
+  mean<-grep("mean", columnnames[,"V2"])
+  std<-grep("std", columnnames[,"V2"])
+  select<-c(mean,std)
+  workdata<-mergeddata[,select]
+  finaldata<-cbind(totalsubjects,Activity_Name,workdata)
+  finaldata<-group_by(finaldata, Subjects, Activity_Name)
+  finaldata<<-summarise_at(finaldata, 3:ncol(finaldata), funs(mean))
+  setwd("C:/Users/Adam/Desktop/R")
+  #dim(finaldata)
+  write.table(finaldata, "tidyworkdata.txt", row.name=FALSE)
+}
