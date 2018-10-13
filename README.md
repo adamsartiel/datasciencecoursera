@@ -11,9 +11,10 @@ This script performs the following task:
 5. Read the activity_labels file into the activities table, and create the Activity_Name textvector from the activities labels vector in the table. This would replace the number list with a descriptive text, e.g. 'LAYING'
 6. Read the features file into 'columnnames' and add them as the names for the mergeddata data frame.
 7. Use grep to create vectors of column numbers including 'mean' and 'std' labels, and unite them into 'selected' vector.
-8. Filter mergeddata into workdata
-
-totalactivities factors
-
+8. Filter mergeddata into workdata including only mean and std columns
+9. Bind Subject, Activity_Name, and data columns into finaldata.
+10. Group finaldata by Subject, Activity_Name
+11. Summarize (using summarise_at) grouped finaldata columns (from 3 onwards) using 'mean' function.
+12. Export file
 
 
