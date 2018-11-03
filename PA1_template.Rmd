@@ -1,0 +1,133 @@
+---
+title: "First Assignment"
+author: "Adam Sartiel"
+date: "Nov. 3rd, 2018"
+output: html_document
+---
+========================================================================================  
+
+## Analysis of walking steps per day during 2,500 5-minutes intervals over two months.  
+First some preparation steps - load libraries, set working directory, load file.
+
+```{r Preparation_code, echo=TRUE,cache=FALSE, results="hide"}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+setwd("C:/Users/Adam/Desktop/R/Reproducible Research/First Assignment")
+activity<-read.csv("activity.csv")
+
+```
+
+### First Question: What is mean total number of steps taken per day?
+Present an histogram of the steps walked in all intervals during the measurement period:
+
+```{r Steps_per_day_histogram, cache=FALSE}
+
+TotStepsDay<-activity%>%group_by(date)%>%summarise_at(1,funs(sum))
+
+hist(TotStepsDay$steps, col="red", main="Distribution of Steps per Day", xlab="Total Steps")
+```
+  
+  The total steps per day were calculated and charted over the histogram above.
+
+
+```{r calculate mean and median}
+mean<-format(mean(TotStepsDay$steps, na.rm =TRUE), scientific=FALSE)
+
+quant<-format(quantile(TotStepsDay$steps, probs=0.5, na.rm = TRUE), scientific = FALSE)
+mean
+quant
+```
+  The mean of steps taken per day is `r mean` and the median is `r quant`.  
+    
+### Second Question: What is the average daily activity pattern?  
+Make a time series plot (i.e. \color{red}{\verb|type = "l"|}type="l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r Plotting daily pattern}
+AveStepsInt<-activity%>%group_by(interval)%>%summarise_at(1,funs(mean), na.rm=TRUE)
+qplot(interval, steps, data = AveStepsInt, geom="line", color=I("blue"))
+```
+  
+  Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?    
+  The plot shows a maximum in the area of interval 800. Let's calculate the exact interval:
+```{r Calculate Max average steps interval}
+MaxStepsInt<-AveStepsInt[,2]==max(AveStepsInt[,2]) #Look of all the steps in intervals, which equals the maximum
+MaxStepIntRow<-AveStepsInt[MaxStepsInt==TRUE,]     #Extract the row of the maximum steps interval
+mint<-format(as.numeric(MaxStepIntRow[1,1]), scientific=FALSE)
+msteps<-format(as.numeric(MaxStepIntRow[1,2]), scientific=FALSE)
+mint
+msteps
+```
+  The maximum number of average steps is `r msteps` and it is reached on interval `r mint`. 
+    
+### Third Question: Imputing missing values
+Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with \color{red}{\verb|NA|}NAs)
+
+```{r calculating NA numbers}
+
+NAS<-is.na(activity$steps)
+snas<-as.numeric(sum(NAS))
+snas
+```
+  The total number of missing values is therefore `r snas`.  
+  Let's replace these missing values by the average steps walked in the same interval over the two months.  
+  This require 2 for loops: One going through the entire database to find the NAs, the second then called to look in the average steps data frame for an identical interval, and insert it instead of the NA. Once found, the second loop breaks and the program looks for the next NA.
+```{r replace NAs in new frame}
+  clean_activity<-activity                #create a mirror file to the activity data
+  for (i in 1:nrow(activity)){            #go through data and look for NAs
+    if (is.na(activity[i,1])==TRUE){      #if found, go through Average Steps frame and look for match  
+      for (j in 1:nrow(AveStepsInt)){
+        if (AveStepsInt[j,1]==activity[i,3]){  #if match found, replace NA with the average in the new mirror file
+          clean_activity[i,1]=AveStepsInt[j,2] #break afterwards to the next NA.
+          break()
+        }
+      }
+    }   
+  }
+```
+
+  Now let's compare the histograms of both cases:
+
+```{r plot comparison between original and clean data}
+
+  TotStepsDayClean<-clean_activity%>%group_by(date)%>%summarise_at(1,funs(sum))
+  par(mfrow=c(1,2))
+  hist(TotStepsDay$steps, col="red", main="Distribution of Steps per Day", xlab="Total Steps")
+  hist(TotStepsDayClean$steps, col="blue", main="With no missing values", xlab="Total Steps")
+```
+    
+  We see a small difference between the histograms. Now let's compare the mean and median values:  
+  
+```{r Compare means and medians}  
+  nmean<-format(as.numeric(mean(TotStepsDayClean$steps, na.rm =TRUE)), scientific=FALSE)
+  nquant<-format(as.numeric(quantile(TotStepsDayClean$steps, probs=0.5, na.rm = TRUE)), scientific=FALSE)
+  nmean
+  nquant
+```
+  
+  The mean is now `r nmean` compared with `r mean` prior to cleaning.  
+  The median is now `r nquant` compared with `r quant` prior to cleaning.  
+  As we replaced missing values with average values, there is no change in the mean. The quantile is slightly changed.      
+  
+### Fourth question: Are there differences in activity patterns between weekdays and weekends?  
+  Create a new factor variable in the dataset with two levels ??? ???weekday??? and ???weekend??? indicating whether a given date is a weekday or weekend day.  
+  We would add columns 'weekend' to the clean_activity data frame. It would be 'weekend' for Saturdays and Sundays (required to be compared to actual dates, 6th and 7th of October, 2012, due to locales issues).  
+  Then, we will re-group the clean_activity data by the intervals and weekend value, and calculate the means per interval for each case.  
+  
+```{r add weekend columns, results="hide"}
+clean_activity<-mutate(clean_activity, weekend=if_else((weekdays(as.POSIXlt(date, format="%Y-%m-%d"))==weekdays(as.POSIXlt("2012-10-06", format="%Y-%m-%d"))|weekdays(as.POSIXlt(date, format="%Y-%m-%d"))==weekdays(as.POSIXlt("2012-10-07", format="%Y-%m-%d"))), "Weekend", "Weekday"))
+```
+  We ignore the warnings as they don't affect results.  
+  
+```{r regroup data}
+AveStepsIntClean<-clean_activity%>%group_by(interval,weekend)%>%summarise_at(1,funs(mean), na.rm=TRUE)
+```
+Make a panel plot containing a time series plot (i.e. \color{red}{\verb|type = "l"|}type="l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).  
+  Finally, we will plot weekdays vs. weekends steps average per intervals:
+  
+```{r plot weekdays vs weekends}
+qplot(interval, steps, data = AveStepsIntClean, geom="line", color=weekend, facets=weekend~.)
+```
+
+  Indeed the high morning peak in interval 835 disappears on weekends, as people oversleep...  
+  
